@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SmartLearn Simulator — Penjual Ikan</title>
+  <style>
+    /* Font import */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cinzel:wght@600&display=swap');
+
+    :root{
+      --bg-1: #3b1a4a; /* deep amartha purple */
+      --bg-2: #5c2a72;
+      --accent: #e7c16a; /* gold accent */
+      --card: rgba(255,255,255,0.04);
+      --glass: rgba(255,255,255,0.03);
+      --text: #fff8f0;
+    }
+
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      background: linear-gradient(135deg,var(--bg-1) 0%, var(--bg-2) 100%);
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px;
+    }
+
+    .app {
+      width:980px;
+      max-width:calc(100% - 40px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.04);
+      border-radius:14px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      overflow:hidden;
+    }
+
+    /* Left column: header + logo + info */
+    .panel-left{
+      padding:22px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03));
+      border-right:1px solid rgba(255,255,255,0.02);
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .brand img{ width:54px; height:54px; border-radius:8px; object-fit:cover; border:2px solid rgba(255,255,255,0.06)}
+    .brand h2{ margin:0; font-size:18px; font-family:Cinzel, serif; color:var(--accent)}
+    .brand p{ margin:0; font-size:12px; opacity:0.9 }
+
+    .scenario-meta{
+      background:var(--card);
+      padding:12px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.02);
+      font-size:13px;
+    }
+
+    .progress-wrap{ margin-top:6px }
+    .progress-bar{
+      height:10px; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden;
+    }
+    .progress-fill{ height:100%; width:0%; background:linear-gradient(90deg,var(--accent), #ffd77a); transition:width .25s ease }
+
+    /* Right column: simulator area */
+    .panel-right{ padding:26px; display:flex; flex-direction:column; gap:14px }
+    .title{ font-family:Cinzel, serif; font-size:22px; margin:0; color:var(--accent) }
+    .desc{ background:var(--glass); padding:14px; border-radius:10px; min-height:120px; border:1px solid rgba(255,255,255,0.02); font-size:15px }
+
+    .choices{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px }
+    .choice-btn{
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.04);
+      padding:10px 12px; border-radius:10px; cursor:pointer; min-width:180px; text-align:left;
+      transition:transform .12s ease, background .12s ease;
+    }
+    .choice-btn:hover{ transform:translateY(-4px); background:rgba(255,255,255,0.045) }
+
+    .small{ font-size:12px; opacity:0.9 }
+
+    /* Advisor popup */
+    .advisor {
+      position:fixed; right:28px; bottom:28px; width:300px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; border:1px solid rgba(255,255,255,0.04); padding:12px; box-shadow:0 8px 30px rgba(0,0,0,0.45)
+    }
+    .advisor h4{ margin:0 0 8px 0; color:var(--accent); font-family:Cinzel, serif }
+    .advisor p{ margin:0; font-size:14px }
+    .advisor .ok{ margin-top:10px; display:block; text-align:right }
+    .btn{ background:var(--accent); color:#2b1c1b; padding:8px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700 }
+
+    /* result */
+    .result{ text-align:center; padding:18px }
+
+    @media(max-width:880px){
+      .app{ grid-template-columns: 1fr; }
+      .panel-left{ order:2 }
+      .panel-right{ order:1 }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="panel-left">
+      <div class="brand">
+        <!-- Dummy Amartha logo (replace with real one later) -->
+        <img src="/mnt/data/ee61329a-dae1-4056-bd54-d7fa95bf546b.png" alt="amartha-logo" />
+        <div>
+          <h2>Amartha</h2>
+          <p>SmartLearn Simulator</p>
+        </div>
+      </div>
+
+      <div class="scenario-meta">
+        <div class="small">Simulasi</div>
+        <strong id="scenarioTitle">Penjual Ikan — Dari 0</strong>
+        <div class="progress-wrap" style="margin-top:10px">
+          <div class="small">Progress</div>
+          <div class="progress-bar" aria-hidden>
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px; display:flex; gap:8px; align-items:center">
+          <div class="small">Skor: <strong id="score">0</strong></div>
+          <div style="flex:1"></div>
+          <button class="btn" onclick="restart()">Restart</button>
+        </div>
+      </div>
+
+      <div style="margin-top:14px; font-size:13px; opacity:0.95">
+        <div><strong>Instruksi</strong></div>
+        <ul style="padding-left:18px; margin:8px 0">
+          <li>Pilih satu pilihan setiap langkah.</li>
+          <li>AI Advisor (kanan bawah) akan memberi feedback.</li>
+          <li>Tujuan: lunasi cicilan & stabilkan usaha.</li>
+        </ul>
+      </div>
+
+      <div style="margin-top:auto; font-size:12px; opacity:0.85">
+        <div>Amartha — Demo Simulasi</div>
+        <div style="margin-top:6px">Tema warna menyerupai amartha.com • Gold accents</div>
+      </div>
+    </div>
+
+    <div class="panel-right">
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <div>
+          <div class="title">SmartLearn — Penjual Ikan</div>
+          <div class="small">Langkah <span id="stepNo">1</span> dari <span id="stepTotal">8</span></div>
+        </div>
+        <div class="small">Tom, good luck! 💪</div>
+      </div>
+
+      <div id="text" class="desc">Memuat simulasi...</div>
+
+      <div id="controls" class="choices"></div>
+
+      <div id="resultArea"></div>
+    </div>
+  </div>
+
+  <!-- AI Advisor popup (static positioned) -->
+  <div id="advisorBox" class="advisor hidden">
+    <h4>💬 AmarAI Advisor</h4>
+    <p id="advisorText">Halo! Aku AmarAI — penasihatmu. Pilih jawaban yang paling bijak.</p>
+    <div class="ok"><button class="btn" onclick="closeAdvisor()">OK</button></div>
+  </div>
+
+  <script>
+    // scenario data (easy to replace with external JSON)
+    const steps = [
+      {
+        text: "Kamu belum memiliki modal. Dari mana kamu akan mencari modal?",
+        choices: [
+          { text: "Meminjam uang di Amartha dengan perjanjian resmi", correct:true, feedback: "Bagus — pembiayaan terstruktur dan pendampingan membantu usaha." },
+          { text: "Meminjam ke teman tanpa perjanjian", correct:false, feedback: "Risiko perselisihan dan tidak ada pendampingan." },
+          { text: "Menggunakan kartu kredit tanpa rencana", correct:false, feedback: "Bunga tinggi dan bisa bikin kesulitan arus kas." }
+        ]
+      },
+      {
+        text: "Kamu menerima dana. Langkah pertama untuk memulai usaha ikan?",
+        choices: [
+          { text: "Membeli ikan segar di pasar nelayan", correct:true, feedback: "Fokus pada perputaran modal dulu — bagus." },
+          { text: "Membeli peralatan mahal dulu", correct:false, feedback: "Peralatan perlu, tapi jangan habiskan modal awal." },
+          { text: "Menggunakan dana untuk renovasi rumah", correct:false, feedback: "Dana usaha harus fokus pada bisnis." }
+        ]
+      },
+      {
+        text: "Menentukan lokasi penjualan yang terbaik?",
+        choices: [
+          { text: "Berjualan di pasar tradisional ramai", correct:true, feedback: "Lebih banyak pelanggan dan perputaran cepat." },
+          { text: "Menjual dari rumah tanpa promosi", correct:false, feedback: "Jangkauan terbatas; butuh strategi promosi." },
+          { text: "Jual online tanpa pengalaman", correct:false, feedback: "Potensi ada, tapi butuh keahlian pemasaran." }
+        ]
+      },
+      {
+        text: "Bagaimana kamu menetapkan harga jual?",
+        choices: [
+          { text: "Harga sedikit di atas modal (margin wajar)", correct:true, feedback: "Seimbang antara kompetitif dan menguntungkan." },
+          { text: "Menetapkan harga sangat tinggi", correct:false, feedback: "Bisa membuat pelanggan kabur." },
+          { text: "Menjual dengan harga di bawah modal", correct:false, feedback: "Rugi; tidak berkelanjutan." }
+        ]
+      },
+      {
+        text: "Keuntungan mulai masuk. Prioritas uang?",
+        choices: [
+          { text: "Sisihkan untuk cicilan dan kebutuhan operasional", correct:true, feedback: "Menjaga arus kas dan kewajiban menjadi prioritas." },
+          { text: "Gunakan untuk pesta dan konsumsi", correct:false, feedback: "Kebiasaan konsumtif mengganggu kelanjutan usaha." },
+          { text: "Investasikan semua keuntungan untuk ekspansi besar", correct:false, feedback: "Ekspansi butuh perencanaan dan dana cadangan." }
+        ]
+      },
+      {
+        text: "Waktunya membayar cicilan Amartha. Apa yang kamu lakukan?",
+        choices: [
+          { text: "Bayar tepat waktu sesuai perjanjian", correct:true, feedback: "Meningkatkan reputasi dan akses pembiayaan di masa depan." },
+          { text: "Tunda bayar untuk stok barang", correct:false, feedback: "Menunda bisa mengakibatkan denda dan masalah kredit." },
+          { text: "Pinjam lagi untuk menutup cicilan", correct:false, feedback: "Kenaikan utang tanpa perbaikan arus kas berbahaya." }
+        ]
+      },
+      {
+        text: "Usaha mulai stabil. Langkah pengembangan yang wajar?",
+        choices: [
+          { text: "Tambah variasi produk (ikan asin, udang)", correct:true, feedback: "Diversifikasi menambah sumber pendapatan." },
+          { text: "Buka cabang besar tanpa modal cukup", correct:false, feedback: "Risiko gagal tinggi jika modal tidak siap." },
+          { text: "Jual usaha dan berhenti", correct:false, feedback: "Menghentikan usaha berarti kehilangan potensi jangka panjang." }
+        ]
+      },
+      {
+        text: "Cicilan lunas dan usaha berjalan stabil. Pilihanmu?",
+        choices: [
+          { text: "Lanjutkan usaha & mulai menabung untuk ekspansi", correct:true, feedback: "Konsolidasi lalu tumbuh secara bertahap." },
+          { text: "Ambil pinjaman besar untuk cepat kaya", correct:false, feedback: "Berisiko jika tidak ada perencanaan." },
+          { text: "Berhenti jualan dan gunakan uang untuk konsumsi", correct:false, feedback: "Potensi pendapatan jangka panjang hilang." }
+        ]
+      }
+    ];
+
+    let current = 0; let score = 0;
+    const total = steps.length;
+
+    function renderStep(){
+      const s = steps[current];
+      document.getElementById('stepNo').innerText = current+1;
+      document.getElementById('stepTotal').innerText = total;
+      document.getElementById('text').innerText = s.text;
+
+      const controls = document.getElementById('controls');
+      controls.innerHTML = '';
+      s.choices.forEach((c, i)=>{
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.innerHTML = `<div style="font-weight:600">${String.fromCharCode(65+i)}. ${c.text}</div><div class="small" style="margin-top:6px">Klik untuk pilih</div>`;
+        btn.onclick = ()=> choose(i);
+        controls.appendChild(btn);
+      });
+
+      // progress
+      const pct = Math.round((current/total)*100);
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('score').innerText = score;
+    }
+
+    function choose(index){
+      const s = steps[current];
+      const choice = s.choices[index];
+      // score
+      if(choice.correct) score += Math.round(100/total);
+      // show advisor feedback (simulating LLM)
+      showAdvisor(choice.feedback);
+
+      // if wrong, allow retry once (soft learning)
+      if(!choice.correct){
+        // mark negative but let user try again after advice
+        // we don't advance automatically; user must click OK on advisor
+        // store a flag to allow retry
+        advisorState = { advanceAfterClose:false };
+      } else {
+        advisorState = { advanceAfterClose:true };
+      }
+    }
+
+    let advisorState = { advanceAfterClose:true };
+
+    function showAdvisor(msg){
+      document.getElementById('advisorText').innerText = msg;
+      document.getElementById('advisorBox').classList.remove('hidden');
+    }
+    function closeAdvisor(){
+      document.getElementById('advisorBox').classList.add('hidden');
+      if(advisorState.advanceAfterClose){
+        current++;
+        if(current>=total) showResult(); else renderStep();
+      }
+    }
+
+    function showResult(){
+      document.getElementById('text').innerHTML = '';
+      document.getElementById('controls').innerHTML = '';
+      document.getElementById('progressFill').style.width = '100%';
+
+      const area = document.getElementById('resultArea');
+      area.innerHTML = `<div class="result">\
+        <h3>🎉 Simulasi Selesai!</h3>\
+        <p class="small">Skor Literasi Keuangan: <strong>${score}</strong></p>\
+        <p class="small">Kamu berhasil mengambil ${Math.round(score/(100/total))} keputusan bijak dari ${total} langkah.</p>\
+        <div style=\"margin-top:12px\"><button class=\"btn\" onclick=\"restart()\">Coba Lagi</button></div>\
+      </div>`;
+    }
+
+    function restart(){ current = 0; score = 0; document.getElementById('resultArea').innerHTML = ''; renderStep(); }
+
+    // init
+    renderStep();
+  </script>
+</body>
+</html>
